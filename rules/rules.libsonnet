@@ -243,13 +243,13 @@
           {
             record: 'node:pod_running:count',
             expr: |||
-              count(kube_pod_info unless on (pod) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Succeeded"} > 0))  by (node) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
+              count((kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Running"} > 0) * on(pod, namespace) group_left(node) kube_pod_info{%(kubeStateMetricsSelector)s}) by (node)
             ||| % $._config,
           },
           {
             record: 'node:pod_succeeded:count',
             expr: |||
-              count(kube_pod_info unless on (pod) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Running"} > 0))  by (node) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready",status=~"unknown|false"} > 0)
+              count((kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Succeeded"} > 0) * on(pod, namespace) group_left(node) kube_pod_info{%(kubeStateMetricsSelector)s}) by (node)
             ||| % $._config,
           },
           {
