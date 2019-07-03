@@ -273,7 +273,7 @@
           {
             record: 'node:disk_space_utilization:ratio',
             expr: |||
-              1- sum(max(node_filesystem_avail_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) by (device, node)) by (node) / sum(max(node_filesystem_size_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) by (device, node)) by (node)
+              1- sum(max(node_filesystem_free_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) by (device, node)) by (node) / sum(max(node_filesystem_size_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) by (device, node)) by (node)
             ||| % $._config,
           },
           {
@@ -320,7 +320,7 @@
           {
             record: 'cluster:disk_utilization:ratio',
             expr: |||
-              1 - sum(max(node_filesystem_avail_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s}) by (device, instance)) / sum(max(node_filesystem_size_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s}) by (device, instance))
+              1 - sum(max(node_filesystem_free_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s}) by (device, instance)) / sum(max(node_filesystem_size_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s}) by (device, instance))
             ||| % $._config,
           },
           {
