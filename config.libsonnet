@@ -20,7 +20,7 @@
 
     // We build alerts for the presence of all these jobs.
     jobs: {
-      Kubelet: $._config.kubeletSelector,
+      Etcd: $._config.etcdSelector,
       KubeScheduler: $._config.kubeSchedulerSelector,
       KubeControllerManager: $._config.kubeControllerManagerSelector,
       KubeAPI: $._config.kubeApiserverSelector,

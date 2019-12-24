@@ -9,7 +9,7 @@
             expr: |||
               absent(up{%s} == 1)
             ||| % $._config.jobs[name],
-            'for': '15m',
+            'for': '5m',
             labels: {
               severity: 'critical',
             },
