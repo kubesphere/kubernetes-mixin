@@ -3,4 +3,6 @@
 (import 'storage_alerts.libsonnet') +
 (import 'kube_apiserver.libsonnet') +
 (import 'kubelet.libsonnet') +
+(import 'kube_scheduler.libsonnet') +
+(import 'kube_controller_manager.libsonnet') +
 (import 'add-runbook-links.libsonnet')
