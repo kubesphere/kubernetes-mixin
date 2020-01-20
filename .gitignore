@@ -2,3 +2,5 @@
 dashboards_out
 vendor
 jsonnetfile.lock.json
+node_modules/
+package*.json
