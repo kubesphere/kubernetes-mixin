@@ -22,6 +22,26 @@
               sum((container_memory_usage_bytes{%(kubeletSelector)s, image!="", container_name!=""} - container_memory_cache{%(kubeletSelector)s, image!="", container_name!=""}) * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
             ||| % $._config,
           },
+          {
+            record: 'namespace:kube_pod_container_resource_requests_memory_bytes:sum',
+            expr: |||
+              sum by (namespace, label_name) (
+                  sum(kube_pod_container_resource_requests_memory_bytes{%(kubeStateMetricsSelector)s} * on (endpoint, instance, job, namespace, pod, service) group_left(phase) (kube_pod_status_phase{phase=~"Pending|Running"} == 1)) by (namespace, pod)
+                * on (namespace, pod)
+                  group_left(label_name) kube_pod_labels{%(kubeStateMetricsSelector)s}
+              )
+            ||| % $._config,
+          },
+          {
+            record: 'namespace:kube_pod_container_resource_requests_cpu_cores:sum',
+            expr: |||
+              sum by (namespace, label_name) (
+                  sum(kube_pod_container_resource_requests_cpu_cores{%(kubeStateMetricsSelector)s} * on (endpoint, instance, job, namespace, pod, service) group_left(phase) (kube_pod_status_phase{phase=~"Pending|Running"} == 1)) by (namespace, pod)
+                * on (namespace, pod)
+                  group_left(label_name) kube_pod_labels{%(kubeStateMetricsSelector)s}
+              )
+            ||| % $._config,
+          },
         ],
       },
       {
