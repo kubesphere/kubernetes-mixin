@@ -7,19 +7,19 @@
           {
             record: 'namespace:container_cpu_usage_seconds_total:sum_rate',
             expr: |||
-              sum((container_cpu_usage_seconds_total{%(kubeletSelector)s, image!="", container_name!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s} - container_cpu_usage_seconds_total{%(kubeletSelector)s, image!="", container_name!=""} offset 90s * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) / 90) by (namespace, label_kubesphere_io_workspace)
+              sum((container_cpu_usage_seconds_total{%(kubeletSelector)s, image!="", container!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s} - container_cpu_usage_seconds_total{%(kubeletSelector)s, image!="", container!=""} offset 90s * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) / 90) by (namespace, label_kubesphere_io_workspace)
             ||| % $._config,
           },
           {
             record: 'namespace:container_memory_usage_bytes:sum',
             expr: |||
-              sum(container_memory_usage_bytes{%(kubeletSelector)s, image!="", container_name!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
+              sum(container_memory_usage_bytes{%(kubeletSelector)s, image!="", container!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
             ||| % $._config,
           },
           {
             record: 'namespace:container_memory_usage_bytes_wo_cache:sum',
             expr: |||
-              sum((container_memory_usage_bytes{%(kubeletSelector)s, image!="", container_name!=""} - container_memory_cache{%(kubeletSelector)s, image!="", container_name!=""}) * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
+              sum((container_memory_usage_bytes{%(kubeletSelector)s, image!="", container!=""} - container_memory_cache{%(kubeletSelector)s, image!="", container!=""}) * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
             ||| % $._config,
           },
           {
@@ -371,31 +371,31 @@
           {
             record: 'namespace:workload_cpu_usage:sum',
             expr: |||
-              sum (label_replace(label_join(sum(irate(container_cpu_usage_seconds_total{%(kubeletSelector)s, pod_name!="", image!=""}[5m])) by (namespace, pod_name) * on (pod_name, namespace) group_left(owner_kind,owner_name) label_join(label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "pod_name", "", "pod", "_name"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(irate(container_cpu_usage_seconds_total{%(kubeletSelector)s, pod!="", image!=""}[5m])) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
             record: 'namespace:workload_memory_usage:sum',
             expr: |||
-              sum (label_replace(label_join(sum(container_memory_usage_bytes{%(kubeletSelector)s, pod_name!="", image!=""}) by (namespace, pod_name) * on (pod_name, namespace) group_left(owner_kind,owner_name) label_join(label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "pod_name", "", "pod", "_name"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(container_memory_usage_bytes{%(kubeletSelector)s, pod!="", image!=""}) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
             record: 'namespace:workload_memory_usage_wo_cache:sum',
             expr: |||
-              sum (label_replace(label_join(sum(container_memory_usage_bytes{%(kubeletSelector)s, pod_name!="", image!=""} - container_memory_cache{%(kubeletSelector)s, pod_name!="", image!=""}) by (namespace, pod_name) * on (pod_name, namespace) group_left(owner_kind,owner_name) label_join(label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "pod_name", "", "pod", "_name"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(container_memory_usage_bytes{%(kubeletSelector)s, pod!="", image!=""} - container_memory_cache{%(kubeletSelector)s, pod!="", image!=""}) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
             record: 'namespace:workload_net_bytes_transmitted:sum_irate',
             expr: |||
-              sum (label_replace(label_join(sum(irate(container_network_transmit_bytes_total{pod_name!="", interface!~"^(cali.+|tunl.+|dummy.+|kube.+|flannel.+|cni.+|docker.+|veth.+|lo.*)", %(kubeletSelector)s}[5m])) by (namespace, pod_name) * on (pod_name, namespace) group_left(owner_kind,owner_name) label_join(label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "pod_name", "", "pod", "_name"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(irate(container_network_transmit_bytes_total{pod!="", interface!~"^(cali.+|tunl.+|dummy.+|kube.+|flannel.+|cni.+|docker.+|veth.+|lo.*)", %(kubeletSelector)s}[5m])) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
             record: 'namespace:workload_net_bytes_received:sum_irate',
             expr: |||
-              sum (label_replace(label_join(sum(irate(container_network_receive_bytes_total{pod_name!="", interface!~"^(cali.+|tunl.+|dummy.+|kube.+|flannel.+|cni.+|docker.+|veth.+|lo.*)", %(kubeletSelector)s}[5m])) by (namespace, pod_name) * on (pod_name, namespace) group_left(owner_kind,owner_name) label_join(label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "pod_name", "", "pod", "_name"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(irate(container_network_receive_bytes_total{pod!="", interface!~"^(cali.+|tunl.+|dummy.+|kube.+|flannel.+|cni.+|docker.+|veth.+|lo.*)", %(kubeletSelector)s}[5m])) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
@@ -416,123 +416,6 @@
               label_replace(label_replace((1 - sum(kube_statefulset_status_replicas_current{%(kubeStateMetricsSelector)s}) by (statefulset, namespace) / sum(kube_statefulset_replicas{%(kubeStateMetricsSelector)s}) by (statefulset, namespace)) * on (namespace) group_left(label_kubesphere_io_workspace)(kube_namespace_labels{%(kubeStateMetricsSelector)s}) , "workload","StatefulSet:$1", "statefulset", "(.*)"), "owner_kind","StatefulSet", "", "")
             ||| % $._config,
           },
-        ],
-      },
-      {
-        name: 'etcd.rules',
-        rules: [
-          {
-            record: 'etcd:up:sum',
-            expr: |||
-              sum(up{%(etcdSelector)s} == 1)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_server_leader_changes_seen:sum_changes',
-            expr: |||
-              sum(label_replace(sum(changes(etcd_server_leader_changes_seen_total{%(etcdSelector)s}[1h])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_server_proposals_failed:sum_irate',
-            expr: |||
-              sum(label_replace(sum(irate(etcd_server_proposals_failed_total{%(etcdSelector)s}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_server_proposals_applied:sum_irate',
-            expr: |||
-              sum(label_replace(sum(irate(etcd_server_proposals_applied_total{%(etcdSelector)s}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_server_proposals_committed:sum_irate',
-            expr: |||
-              sum(label_replace(sum(irate(etcd_server_proposals_committed_total{%(etcdSelector)s}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_server_proposals_pending:sum',
-            expr: |||
-              sum(label_replace(sum(etcd_server_proposals_pending{%(etcdSelector)s}) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_debugging_mvcc_db_total_size:sum',
-            expr: |||
-              sum(label_replace(etcd_debugging_mvcc_db_total_size_in_bytes{%(etcdSelector)s},"node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_mvcc_db_total_size:sum',
-            expr: |||
-              sum(label_replace(etcd_mvcc_db_total_size_in_bytes{%(etcdSelector)s},"node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_network_client_grpc_received_bytes:sum_irate',
-            expr: |||
-              sum(label_replace(sum(irate(etcd_network_client_grpc_received_bytes_total{%(etcdSelector)s}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_network_client_grpc_sent_bytes:sum_irate',
-            expr: |||
-              sum(label_replace(sum(irate(etcd_network_client_grpc_sent_bytes_total{%(etcdSelector)s}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:grpc_server_started:sum_irate',
-            expr: |||
-              sum(label_replace(sum(irate(grpc_server_started_total{%(etcdSelector)s,grpc_type="unary"}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:grpc_server_handled:sum_irate',
-            expr: |||
-              sum(label_replace(sum(irate(grpc_server_handled_total{%(etcdSelector)s,grpc_type="unary",grpc_code!="OK"}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:grpc_server_msg_received:sum_irate',
-            expr: |||
-              sum(label_replace(sum(irate(grpc_server_msg_received_total{%(etcdSelector)s}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:grpc_server_msg_sent:sum_irate',
-            expr: |||
-              sum(label_replace(sum(irate(grpc_server_msg_sent_total{%(etcdSelector)s}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_disk_wal_fsync_duration:avg',
-            expr: |||
-              sum(label_replace(sum(irate(etcd_disk_wal_fsync_duration_seconds_sum{%(etcdSelector)s}[5m])) by (instance) / sum(irate(etcd_disk_wal_fsync_duration_seconds_count{%(etcdSelector)s}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-          {
-            record: 'etcd:etcd_disk_backend_commit_duration:avg',
-            expr: |||
-              sum(label_replace(sum(irate(etcd_disk_backend_commit_duration_seconds_sum{%(etcdSelector)s}[5m])) by (instance) / sum(irate(etcd_disk_backend_commit_duration_seconds_count{%(etcdSelector)s}[5m])) by (instance), "node", "$1", "instance", "(.*):.*")) by (node)
-            ||| % $._config,
-          },
-        ],
-      },
-      {
-        name: 'etcd_histogram.rules',
-        rules: [
-          {
-            record: 'etcd:%s:histogram_quantile' % metric,
-            expr: |||
-              histogram_quantile(%(quantile)s, sum(label_replace(sum(irate(%(metric)s_seconds_bucket{%(etcdSelector)s}[5m])) by (instance, le), "node", "$1", "instance", "(.*):.*")) by (node, le))
-            ||| % ({ quantile: quantile, metric: metric } + $._config),
-            labels: {
-              quantile: quantile,
-            },
-          }
-          for metric in ['etcd_disk_wal_fsync_duration', 'etcd_disk_backend_commit_duration']      
-          for quantile in ['0.99', '0.9', '0.5']
         ],
       },
       {
