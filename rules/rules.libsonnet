@@ -19,7 +19,7 @@
           {
             record: 'namespace:container_memory_usage_bytes_wo_cache:sum',
             expr: |||
-              sum((container_memory_usage_bytes{%(kubeletSelector)s, image!="", container!=""} - container_memory_cache{%(kubeletSelector)s, image!="", container!=""}) * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
+              sum(container_memory_working_set_bytes{%(kubeletSelector)s, image!="", container!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
             ||| % $._config,
           },
         ],
@@ -363,7 +363,7 @@
           {
             record: 'namespace:workload_memory_usage_wo_cache:sum',
             expr: |||
-              sum (label_replace(label_join(sum(container_memory_usage_bytes{%(kubeletSelector)s, pod!="", image!=""} - container_memory_cache{%(kubeletSelector)s, pod!="", image!=""}) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(container_memory_working_set_bytes{%(kubeletSelector)s, pod!="", image!=""}) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
