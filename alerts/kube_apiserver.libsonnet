@@ -14,25 +14,44 @@ local utils = import 'utils.libsonnet';
   prometheusAlerts+:: {
     groups+: [
       {
+        name: 'kube-apiserver-error-alerts',
+        rules:
+          $._config.SLOs.apiserver.errors.alerts,
+      },
+      {
         name: 'kubernetes-system-apiserver',
         rules: [
           {
             alert: 'KubeAPILatencyHigh',
             expr: |||
-              cluster_quantile:apiserver_request_duration_seconds:histogram_quantile{%(kubeApiserverSelector)s,quantile="0.99",subresource!="log",verb!~"LIST|WATCH|WATCHLIST|PROXY|CONNECT"} > %(kubeAPILatencyWarningSeconds)s
+              (
+                cluster:apiserver_request_duration_seconds:mean5m{%(kubeApiserverSelector)s}
+                >
+                on (verb) group_left()
+                (
+                  avg by (verb) (cluster:apiserver_request_duration_seconds:mean5m{%(kubeApiserverSelector)s} >= 0)
+                  +
+                  2*stddev by (verb) (cluster:apiserver_request_duration_seconds:mean5m{%(kubeApiserverSelector)s} >= 0)
+                )
+              ) > on (verb) group_left()
+              1.2 * avg by (verb) (cluster:apiserver_request_duration_seconds:mean5m{%(kubeApiserverSelector)s} >= 0)
+              and on (verb,resource)
+              cluster_quantile:apiserver_request_duration_seconds:histogram_quantile{%(kubeApiserverSelector)s,quantile="0.99"}
+              >
+              %(kubeAPILatencyWarningSeconds)s
             ||| % $._config,
-            'for': '10m',
+            'for': '5m',
             labels: {
               severity: 'warning',
             },
             annotations: {
-              message: 'The API server has a 99th percentile latency of {{ $value }} seconds for {{ $labels.verb }} {{ $labels.resource }}.',
+              message: 'The API server has an abnormal latency of {{ $value }} seconds for {{ $labels.verb }} {{ $labels.resource }}.',
             },
           },
           {
             alert: 'KubeAPILatencyHigh',
             expr: |||
-              cluster_quantile:apiserver_request_duration_seconds:histogram_quantile{%(kubeApiserverSelector)s,quantile="0.99",subresource!="log",verb!~"LIST|WATCH|WATCHLIST|PROXY|CONNECT"} > %(kubeAPILatencyCriticalSeconds)s
+              cluster_quantile:apiserver_request_duration_seconds:histogram_quantile{%(kubeApiserverSelector)s,quantile="0.99"} > %(kubeAPILatencyCriticalSeconds)s
             ||| % $._config,
             'for': '10m',
             labels: {
@@ -105,7 +124,7 @@ local utils = import 'utils.libsonnet';
           {
             alert: 'KubeClientCertificateExpiration',
             expr: |||
-              apiserver_client_certificate_expiration_seconds_count{%(kubeApiserverSelector)s} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{%(kubeApiserverSelector)s}[5m]))) < %(certExpirationWarningSeconds)s
+              apiserver_client_certificate_expiration_seconds_count{%(kubeApiserverSelector)s} > 0 and on(job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{%(kubeApiserverSelector)s}[5m]))) < %(certExpirationWarningSeconds)s
             ||| % $._config,
             labels: {
               severity: 'warning',
@@ -117,13 +136,38 @@ local utils = import 'utils.libsonnet';
           {
             alert: 'KubeClientCertificateExpiration',
             expr: |||
-              apiserver_client_certificate_expiration_seconds_count{%(kubeApiserverSelector)s} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{%(kubeApiserverSelector)s}[5m]))) < %(certExpirationCriticalSeconds)s
+              apiserver_client_certificate_expiration_seconds_count{%(kubeApiserverSelector)s} > 0 and on(job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{%(kubeApiserverSelector)s}[5m]))) < %(certExpirationCriticalSeconds)s
             ||| % $._config,
             labels: {
               severity: 'critical',
             },
             annotations: {
               message: 'A client certificate used to authenticate to the apiserver is expiring in less than %s.' % (utils.humanizeSeconds($._config.certExpirationCriticalSeconds)),
+            },
+          },
+          {
+            alert: 'AggregatedAPIErrors',
+            expr: |||
+              sum by(name, namespace)(increase(aggregator_unavailable_apiservice_count[5m])) > 2
+            ||| % $._config,
+            labels: {
+              severity: 'warning',
+            },
+            annotations: {
+              message: 'An aggregated API {{ $labels.name }}/{{ $labels.namespace }} has reported errors. The number of errors have increased for it in the past five minutes. High values indicate that the availability of the service changes too often.',
+            },
+          },
+          {
+            alert: 'AggregatedAPIDown',
+            expr: |||
+              sum by(name, namespace)(sum_over_time(aggregator_unavailable_apiservice[5m])) > 0
+            ||| % $._config,
+            'for': '5m',
+            labels: {
+              severity: 'warning',
+            },
+            annotations: {
+              message: 'An aggregated API {{ $labels.name }}/{{ $labels.namespace }} is down. It has not been available at least for the past five minutes.',
             },
           },
           (import '../lib/absent_alert.libsonnet') {

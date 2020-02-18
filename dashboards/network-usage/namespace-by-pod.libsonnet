@@ -7,7 +7,6 @@ local graphPanel = grafana.graphPanel;
 local tablePanel = grafana.tablePanel;
 local annotation = grafana.annotation;
 local singlestat = grafana.singlestat;
-local piechart = grafana.pieChartPanel;
 local promgrafonnet = import '../lib/promgrafonnet/promgrafonnet.libsonnet';
 local numbersinglestat = promgrafonnet.numbersinglestat;
 local gauge = promgrafonnet.gauge;
@@ -26,7 +25,6 @@ local gauge = promgrafonnet.gauge;
         link=false,
         linkTooltip='Drill down',
         linkUrl='',
-        pattern='',
         thresholds=[],
         type='number',
         unit='short'
@@ -39,7 +37,6 @@ local gauge = promgrafonnet.gauge;
         link: link,
         linkTooltip: linkTooltip,
         linkUrl: linkUrl,
-        pattern: pattern,
         thresholds: thresholds,
         type: type,
         unit: unit,
@@ -56,7 +53,7 @@ local gauge = promgrafonnet.gauge;
 
         singlestat.new(
           title=gaugeTitle,
-          datasource='prometheus',
+          datasource='$datasource',
           format='time_series',
           height=9,
           span=12,
@@ -115,7 +112,7 @@ local gauge = promgrafonnet.gauge;
         graphPanel.new(
           title=graphTitle,
           span=12,
-          datasource='prometheus',
+          datasource='$datasource',
           fill=2,
           linewidth=2,
           min_span=12,
@@ -157,69 +154,61 @@ local gauge = promgrafonnet.gauge;
           title=tableTitle,
           span=24,
           min_span=24,
-          datasource='prometheus',
+          datasource='$datasource',
         )
         .addColumn(
-          field='',
+          field='Time',
           style=newStyle(
             alias='Time',
             type='hidden',
-            pattern='Time',
           )
         )
         .addColumn(
-          field='',
+          field='Value #A',
           style=newStyle(
             alias='Bandwidth Received',
-            pattern='Value #A',
             unit='Bps',
           ),
         )
         .addColumn(
-          field='',
+          field='Value #B',
           style=newStyle(
             alias='Bandwidth Transmitted',
-            pattern='Value #B',
             unit='Bps',
           ),
         )
         .addColumn(
-          field='',
+          field='Value #C',
           style=newStyle(
             alias='Rate of Received Packets',
-            pattern='Value #C',
             unit='pps',
           ),
         )
         .addColumn(
-          field='',
+          field='Value #D',
           style=newStyle(
             alias='Rate of Transmitted Packets',
-            pattern='Value #D',
             unit='pps',
           ),
         )
         .addColumn(
-          field='',
+          field='Value #E',
           style=newStyle(
             alias='Rate of Received Packets Dropped',
-            pattern='Value #E',
             unit='pps',
           ),
         )
         .addColumn(
-          field='',
+          field='Value #F',
           style=newStyle(
             alias='Rate of Transmitted Packets Dropped',
-            pattern='Value #F',
             unit='pps',
           ),
         )
         .addColumn(
-          field='',
+          field='pod',
           style=newStyle(
             alias='Pod',
-            pattern='pod',
             link=true,
             linkUrl='d/7a18067ce943a40ae25454675c19ff5c/kubernetes-networking-pod?orgId=1&refresh=30s&var-namespace=$namespace&var-pod=$__cell'
           ),
@@ -245,7 +234,7 @@ local gauge = promgrafonnet.gauge;
       local namespaceTemplate =
         template.new(
           name='namespace',
-          datasource='prometheus',
+          datasource='$datasource',
           query='label_values(container_network_receive_packets_total, namespace)',
           allValues='.+',
           current='kube-system',
@@ -264,7 +253,7 @@ local gauge = promgrafonnet.gauge;
       local resolutionTemplate =
         template.new(
           name='resolution',
-          datasource='prometheus',
+          datasource='$datasource',
           query='30s,5m,1h',
           current='5m',
           hide='',
@@ -299,7 +288,7 @@ local gauge = promgrafonnet.gauge;
       local intervalTemplate =
         template.new(
           name='interval',
-          datasource='prometheus',
+          datasource='$datasource',
           query='4h',
           current='5m',
           hide=2,
@@ -359,6 +348,22 @@ local gauge = promgrafonnet.gauge;
         refresh='30s',
         time_from='now-1h',
         time_to='now',
+      )
+      .addTemplate(
+        {
+          current: {
+            text: 'default',
+            value: 'default',
+          },
+          hide: 0,
+          label: null,
+          name: 'datasource',
+          options: [],
+          query: 'prometheus',
+          refresh: 1,
+          regex: '',
+          type: 'datasource',
+        },
       )
       .addTemplate(namespaceTemplate)
       .addTemplate(resolutionTemplate)

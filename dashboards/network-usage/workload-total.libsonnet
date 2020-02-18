@@ -6,7 +6,6 @@ local template = grafana.template;
 local graphPanel = grafana.graphPanel;
 local annotation = grafana.annotation;
 local singlestat = grafana.singlestat;
-local piechart = grafana.pieChartPanel;
 local promgrafonnet = import '../lib/promgrafonnet/promgrafonnet.libsonnet';
 local numbersinglestat = promgrafonnet.numbersinglestat;
 local gauge = promgrafonnet.gauge;
@@ -16,40 +15,51 @@ local gauge = promgrafonnet.gauge;
 
     'workload-total.json':
 
-      local newPieChartPanel(pieChartTitle, pieChartQuery) =
+      local newBarplotPanel(graphTitle, graphQuery, graphFormat='Bps', legendFormat='{{namespace}}') =
         local target =
           prometheus.target(
-            pieChartQuery
+            graphQuery
           ) + {
-            instant: null,
             intervalFactor: 1,
-            legendFormat: '{{pod}}',
+            legendFormat: legendFormat,
+            step: 10,
           };
 
-        piechart.new(
-          title=pieChartTitle,
-          datasource='prometheus',
-          pieType='donut',
+        graphPanel.new(
+          title=graphTitle,
+          span=24,
+          datasource='$datasource',
+          fill=2,
+          min_span=24,
+          format=graphFormat,
+          min=0,
+          max=null,
+          show_xaxis=false,
+          x_axis_mode='series',
+          x_axis_values='current',
+          lines=false,
+          bars=true,
+          stack=false,
+          legend_show=true,
+          legend_values=true,
+          legend_min=false,
+          legend_max=false,
+          legend_current=true,
+          legend_avg=false,
+          legend_alignAsTable=true,
+          legend_rightSide=true,
+          legend_sort='current',
+          legend_sortDesc=true,
+          nullPointMode='null'
         ).addTarget(target) + {
-          breakpoint: '50%',
-          cacheTimeout: null,
-          combine: {
-            label: 'Others',
-            threshold: 0,
+          legend+: {
+            hideEmpty: true,
+            hideZero: true,
           },
-          fontSize: '80%',
-          format: 'Bps',
-          interval: null,
-          legend: {
-            percentage: true,
-            percentageDecimals: null,
-            show: true,
-            values: true,
+          paceLength: 10,
+          tooltip+: {
+            sort: 2,
           },
-          legendType: 'Right side',
-          maxDataPoints: 3,
-          nullPointMode: 'connected',
-          valueName: 'current',
         };
 
       local newGraphPanel(graphTitle, graphQuery, graphFormat='Bps') =
@@ -65,7 +75,7 @@ local gauge = promgrafonnet.gauge;
         graphPanel.new(
           title=graphTitle,
           span=12,
-          datasource='prometheus',
+          datasource='$datasource',
           fill=2,
           linewidth=2,
           min_span=12,
@@ -92,7 +102,7 @@ local gauge = promgrafonnet.gauge;
       local namespaceTemplate =
         template.new(
           name='namespace',
-          datasource='prometheus',
+          datasource='$datasource',
           query='label_values(container_network_receive_packets_total, namespace)',
           allValues='.+',
           current='kube-system',
@@ -111,7 +121,7 @@ local gauge = promgrafonnet.gauge;
       local workloadTemplate =
         template.new(
           name='workload',
-          datasource='prometheus',
+          datasource='$datasource',
           query='label_values(mixin_pod_workload{namespace=~"$namespace"}, workload)',
           current='',
           hide='',
@@ -129,7 +139,7 @@ local gauge = promgrafonnet.gauge;
       local typeTemplate =
         template.new(
           name='type',
-          datasource='prometheus',
+          datasource='$datasource',
           query='label_values(mixin_pod_workload{namespace=~"$namespace", workload=~"$workload"}, workload_type)',
           current='deployment',
           hide='',
@@ -147,7 +157,7 @@ local gauge = promgrafonnet.gauge;
       local resolutionTemplate =
         template.new(
           name='resolution',
-          datasource='prometheus',
+          datasource='$datasource',
           query='30s,5m,1h',
           current='5m',
           hide='',
@@ -182,7 +192,7 @@ local gauge = promgrafonnet.gauge;
       local intervalTemplate =
         template.new(
           name='interval',
-          datasource='prometheus',
+          datasource='$datasource',
           query='4h',
           current='5m',
           hide=2,
@@ -251,6 +261,22 @@ local gauge = promgrafonnet.gauge;
         time_from='now-1h',
         time_to='now',
       )
+      .addTemplate(
+        {
+          current: {
+            text: 'default',
+            value: 'default',
+          },
+          hide: 0,
+          label: null,
+          name: 'datasource',
+          options: [],
+          query: 'prometheus',
+          refresh: 1,
+          regex: '',
+          type: 'datasource',
+        },
+      )
       .addTemplate(namespaceTemplate)
       .addTemplate(workloadTemplate)
       .addTemplate(typeTemplate)
@@ -259,48 +285,52 @@ local gauge = promgrafonnet.gauge;
       .addAnnotation(annotation.default)
       .addPanel(currentBandwidthRow, gridPos={ h: 1, w: 24, x: 0, y: 0 })
       .addPanel(
-        newPieChartPanel(
-          pieChartTitle='Current Rate of Bytes Received',
-          pieChartQuery=|||
+        newBarplotPanel(
+          graphTitle='Current Rate of Bytes Received',
+          graphQuery=|||
             sort_desc(sum(irate(container_network_receive_bytes_total{namespace=~"$namespace"}[$interval:$resolution])
             * on (namespace,pod)
             group_left(workload,workload_type) mixin_pod_workload{namespace=~"$namespace", workload=~"$workload", workload_type="$type"}) by (pod))
           |||,
+          legendFormat='{{ pod }}',
         ),
         gridPos={ h: 9, w: 12, x: 0, y: 1 }
       )
       .addPanel(
-        newPieChartPanel(
-          pieChartTitle='Current Rate of Bytes Transmitted',
-          pieChartQuery=|||
+        newBarplotPanel(
+          graphTitle='Current Rate of Bytes Transmitted',
+          graphQuery=|||
             sort_desc(sum(irate(container_network_transmit_bytes_total{namespace=~"$namespace"}[$interval:$resolution])
             * on (namespace,pod)
             group_left(workload,workload_type) mixin_pod_workload{namespace=~"$namespace", workload=~"$workload", workload_type="$type"}) by (pod))
           |||,
+          legendFormat='{{ pod }}',
         ),
         gridPos={ h: 9, w: 12, x: 12, y: 1 }
       )
       .addPanel(
         averageBandwidthRow
         .addPanel(
-          newPieChartPanel(
-            pieChartTitle='Average Rate of Bytes Received',
-            pieChartQuery=|||
+          newBarplotPanel(
+            graphTitle='Average Rate of Bytes Received',
+            graphQuery=|||
               sort_desc(avg(irate(container_network_receive_bytes_total{namespace=~"$namespace"}[$interval:$resolution])
               * on (namespace,pod)
               group_left(workload,workload_type) mixin_pod_workload{namespace=~"$namespace", workload=~"$workload", workload_type="$type"}) by (pod))
             |||,
+            legendFormat='{{ pod }}',
           ),
           gridPos={ h: 9, w: 12, x: 0, y: 11 }
         )
         .addPanel(
-          newPieChartPanel(
-            pieChartTitle='Average Rate of Bytes Transmitted',
-            pieChartQuery=|||
+          newBarplotPanel(
+            graphTitle='Average Rate of Bytes Transmitted',
+            graphQuery=|||
               sort_desc(avg(irate(container_network_transmit_bytes_total{namespace=~"$namespace"}[$interval:$resolution])
               * on (namespace,pod)
               group_left(workload,workload_type) mixin_pod_workload{namespace=~"$namespace", workload=~"$workload", workload_type="$type"}) by (pod))
             |||,
+            legendFormat='{{ pod }}',
           ),
           gridPos={ h: 9, w: 12, x: 12, y: 11 }
         ),
