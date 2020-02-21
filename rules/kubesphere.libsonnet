@@ -428,27 +428,27 @@
             ||| % $._config,
           },
           {
-            record: 'apiserver:apiserver_request_count:sum_irate',
+            record: 'apiserver:apiserver_request_total:sum_irate',
             expr: |||
-              sum(irate(apiserver_request_count{%(kubeApiserverSelector)s}[5m]))
+              sum(irate(apiserver_request_total{%(kubeApiserverSelector)s}[5m]))
             ||| % $._config,
           },
           {
-            record: 'apiserver:apiserver_request_count:sum_verb_irate',
+            record: 'apiserver:apiserver_request_total:sum_verb_irate',
             expr: |||
-              sum(irate(apiserver_request_count{%(kubeApiserverSelector)s}[5m])) by (verb)
+              sum(irate(apiserver_request_total{%(kubeApiserverSelector)s}[5m])) by (verb)
             ||| % $._config,
           },
           {
-            record: 'apiserver:apiserver_request_latencies:avg',
+            record: 'apiserver:apiserver_request_duration:avg',
             expr: |||
-              sum(irate(apiserver_request_latencies_sum{%(kubeApiserverSelector)s, verb!~"WATCH|CONNECT"}[5m])) / sum(irate(apiserver_request_latencies_count{%(kubeApiserverSelector)s, verb!~"WATCH|CONNECT"}[5m]))/ 1e+06
+              sum(irate(apiserver_request_duration_seconds_sum{%(kubeApiserverSelector)s,subresource!="log", verb!~"LIST|WATCH|WATCHLIST|PROXY|CONNECT"}[5m])) / sum(irate(apiserver_request_duration_seconds_count{%(kubeApiserverSelector)s, subresource!="log",verb!~"LIST|WATCH|WATCHLIST|PROXY|CONNECT"}[5m]))
             ||| % $._config,
           },
           {
-            record: 'apiserver:apiserver_request_latencies:avg_by_verb',
+            record: 'apiserver:apiserver_request_duration:avg_by_verb',
             expr: |||
-              sum(irate(apiserver_request_latencies_sum{%(kubeApiserverSelector)s, verb!~"WATCH|CONNECT"}[5m])) by (verb) / sum(irate(apiserver_request_latencies_count{%(kubeApiserverSelector)s, verb!~"WATCH|CONNECT"}[5m])) by (verb) / 1e+06
+              sum(irate(apiserver_request_duration_seconds_sum{%(kubeApiserverSelector)s,subresource!="log", verb!~"LIST|WATCH|WATCHLIST|PROXY|CONNECT"}[5m])) by (verb) / sum(irate(apiserver_request_duration_seconds_count{%(kubeApiserverSelector)s, subresource!="log",verb!~"LIST|WATCH|WATCHLIST|PROXY|CONNECT"}[5m])) by (verb)
             ||| % $._config,
           },
         ],
@@ -475,9 +475,9 @@
             ||| % $._config,
           },
           {
-            record: 'scheduler:scheduler_e2e_scheduling_latency:avg',
+            record: 'scheduler:scheduler_e2e_scheduling_duration:avg',
             expr: |||
-              (sum(rate(scheduler_e2e_scheduling_latency_microseconds_sum{%(kubeSchedulerSelector)s}[1h]))  / sum(rate(scheduler_e2e_scheduling_latency_microseconds_count{%(kubeSchedulerSelector)s}[1h]))) /  1e+06
+              (sum(rate(scheduler_e2e_scheduling_duration_seconds_sum{%(kubeSchedulerSelector)s}[1h]))  / sum(rate(scheduler_e2e_scheduling_duration_seconds_count{%(kubeSchedulerSelector)s}[1h])))
             ||| % $._config,
           },
         ],
@@ -488,14 +488,14 @@
           {
             record: 'scheduler:%s:histogram_quantile' % metric,
             expr: |||
-              histogram_quantile(%(quantile)s, sum(rate(%(metric)s_microseconds_bucket{%(kubeSchedulerSelector)s}[1h])) by (le) ) / 1e+06
+              histogram_quantile(%(quantile)s, sum(rate(%(metric)s_seconds_bucket{%(kubeSchedulerSelector)s}[1h])) by (le) )
             ||| % ({ quantile: quantile, metric: metric } + $._config),
             labels: {
               quantile: quantile,
             },
           }
           for quantile in ['0.99', '0.9', '0.5']
-          for metric in ['scheduler_e2e_scheduling_latency']
+          for metric in ['scheduler_e2e_scheduling_duration']
         ],
       },
       {
