@@ -37,8 +37,10 @@
           },
           {
             alert: 'KubeletTooManyPods',
+            // Some node has a capacity of 1 like AWS's Fargate and only exists while a pod is running on it.
+            // We have to ignore this special node in the KubeletTooManyPods alert.
             expr: |||
-              max(max(kubelet_running_pod_count{%(kubeletSelector)s}) by(instance) * on(instance) group_left(node) kubelet_node_name{%(kubeletSelector)s}) by(node) / max(kube_node_status_capacity_pods{%(kubeStateMetricsSelector)s}) by(node) > 0.95
+              max(max(kubelet_running_pod_count{%(kubeletSelector)s}) by(instance) * on(instance) group_left(node) kubelet_node_name{%(kubeletSelector)s}) by(node) / max(kube_node_status_capacity_pods{%(kubeStateMetricsSelector)s} != 1) by(node) > 0.95
             ||| % $._config,
             'for': '15m',
             labels: {
@@ -72,6 +74,19 @@
             },
             annotations: {
               message: 'The Kubelet Pod Lifecycle Event Generator has a 99th percentile duration of {{ $value }} seconds on node {{ $labels.node }}.',
+            },
+          },
+          {
+            alert: 'KubeletPodStartUpLatencyHigh',
+            expr: |||
+              histogram_quantile(0.99, sum(rate(kubelet_pod_worker_duration_seconds_bucket{%(kubeletSelector)s}[5m])) by (instance, le)) * on(instance) group_left(node) kubelet_node_name{%(kubeletSelector)s} > 60
+            ||| % $._config,
+            'for': '15m',
+            labels: {
+              severity: 'warning',
+            },
+            annotations: {
+              message: 'Kubelet Pod startup 99th percentile latency is {{ $value }} seconds on node {{ $labels.node }}.',
             },
           },
           (import '../lib/absent_alert.libsonnet') {

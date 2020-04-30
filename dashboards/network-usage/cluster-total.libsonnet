@@ -7,9 +7,6 @@ local graphPanel = grafana.graphPanel;
 local tablePanel = grafana.tablePanel;
 local annotation = grafana.annotation;
 local singlestat = grafana.singlestat;
-local promgrafonnet = import '../lib/promgrafonnet/promgrafonnet.libsonnet';
-local numbersinglestat = promgrafonnet.numbersinglestat;
-local gauge = promgrafonnet.gauge;
 
 {
   grafanaDashboards+:: {
@@ -343,7 +340,7 @@ local gauge = promgrafonnet.gauge;
         tags=($._config.grafanaK8s.dashboardTags),
         editable=true,
         schemaVersion=18,
-        refresh='30s',
+        refresh=($._config.grafanaK8s.refresh),
         time_from='now-1h',
         time_to='now',
       )
@@ -474,7 +471,7 @@ local gauge = promgrafonnet.gauge;
         )
         .addPanel(
           newGraphPanel(
-            graphTitle='Rate of TCP Retransimts out of all sent segments',
+            graphTitle='Rate of TCP Retransmits out of all sent segments',
             graphQuery='sort_desc(sum(rate(node_netstat_Tcp_RetransSegs[$interval:$resolution]) / rate(node_netstat_Tcp_OutSegs[$interval:$resolution])) by (instance))',
             graphFormat='percentunit',
             legendFormat='{{instance}}'
@@ -488,7 +485,7 @@ local gauge = promgrafonnet.gauge;
           gridPos={ h: 9, w: 24, x: 0, y: 59 }
         ).addPanel(
           newGraphPanel(
-            graphTitle='Rate of TCP SYN Retransimts out of all retransmits',
+            graphTitle='Rate of TCP SYN Retransmits out of all retransmits',
             graphQuery='sort_desc(sum(rate(node_netstat_TcpExt_TCPSynRetrans[$interval:$resolution]) / rate(node_netstat_Tcp_RetransSegs[$interval:$resolution])) by (instance))',
             graphFormat='percentunit',
             legendFormat='{{instance}}'

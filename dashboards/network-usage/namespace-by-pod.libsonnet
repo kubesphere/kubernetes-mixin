@@ -7,9 +7,6 @@ local graphPanel = grafana.graphPanel;
 local tablePanel = grafana.tablePanel;
 local annotation = grafana.annotation;
 local singlestat = grafana.singlestat;
-local promgrafonnet = import '../lib/promgrafonnet/promgrafonnet.libsonnet';
-local numbersinglestat = promgrafonnet.numbersinglestat;
-local gauge = promgrafonnet.gauge;
 
 {
   grafanaDashboards+:: {
@@ -345,7 +342,7 @@ local gauge = promgrafonnet.gauge;
         tags=($._config.grafanaK8s.dashboardTags),
         editable=true,
         schemaVersion=18,
-        refresh='30s',
+        refresh=($._config.grafanaK8s.refresh),
         time_from='now-1h',
         time_to='now',
       )

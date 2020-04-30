@@ -13,13 +13,13 @@ tests:
     values: '1024 1024 1024 1024'
   alert_rule_test:
   - eval_time: 1m
-    alertname: KubePersistentVolumeUsageCritical
+    alertname: KubePersistentVolumeFillingUp
   - eval_time: 2m
-    alertname: KubePersistentVolumeUsageCritical
+    alertname: KubePersistentVolumeFillingUp
   - eval_time: 3m
-    alertname: KubePersistentVolumeUsageCritical
+    alertname: KubePersistentVolumeFillingUp
   - eval_time: 4m
-    alertname: KubePersistentVolumeUsageCritical
+    alertname: KubePersistentVolumeFillingUp
     exp_alerts:
     - exp_labels:
         job: kubelet
@@ -28,7 +28,7 @@ tests:
         severity: critical
       exp_annotations:
         message: 'The PersistentVolume claimed by somepvc in Namespace monitoring is only 1.562% free.'
-        runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubepersistentvolumeusagecritical
+        runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubepersistentvolumefillingup
 
 - interval: 1m
   input_series:
@@ -38,9 +38,7 @@ tests:
     values: '32768+0x61'
   alert_rule_test:
   - eval_time: 1h
-    alertname: KubePersistentVolumeFullInFourDays
-  - eval_time: 61m
-    alertname: KubePersistentVolumeFullInFourDays
+    alertname: KubePersistentVolumeFillingUp
     exp_alerts:
     - exp_labels:
         job: kubelet
@@ -48,8 +46,35 @@ tests:
         persistentvolumeclaim: somepvc
         severity: critical
       exp_annotations:
+        message: 'The PersistentVolume claimed by somepvc in Namespace monitoring is only 1.294% free.'
+        runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubepersistentvolumefillingup
+
+- interval: 1m
+  input_series:
+  - series: 'kubelet_volume_stats_available_bytes{job="kubelet",namespace="monitoring",persistentvolumeclaim="somepvc"}'
+    values: '1024-10x61'
+  - series: 'kubelet_volume_stats_capacity_bytes{job="kubelet",namespace="monitoring",persistentvolumeclaim="somepvc"}'
+    values: '32768+0x61'
+  alert_rule_test:
+  - eval_time: 61m
+    alertname: KubePersistentVolumeFillingUp
+    exp_alerts:
+    - exp_labels:
+        job: kubelet
+        namespace: monitoring
+        persistentvolumeclaim: somepvc
+        severity: warning
+      exp_annotations:
         message: 'Based on recent sampling, the PersistentVolume claimed by somepvc in Namespace monitoring is expected to fill up within four days. Currently 1.263% is available.'
-        runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubepersistentvolumefullinfourdays
+        runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubepersistentvolumefillingup
+    - exp_labels:
+        job: kubelet
+        namespace: monitoring
+        persistentvolumeclaim: somepvc
+        severity: critical
+      exp_annotations:
+        message: 'The PersistentVolume claimed by somepvc in Namespace monitoring is only 1.263% free.'
+        runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubepersistentvolumefillingup
 
 - interval: 1m
   input_series:
@@ -173,3 +198,49 @@ tests:
       exp_annotations:
         message: 'The readiness status of node minikube has changed 10 times in the last 15 minutes.'
         runbook_url: 'https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubenodereadinessflapping'
+
+- interval: 1m
+  input_series:
+  - series: 'node_cpu_seconds_total{cpu="0",endpoint="https",instance="instance1",job="node-exporter",mode="idle",namespace="openshift-monitoring",pod="node-exporter-1",service="node-exporter"}'
+    values: '1 1'
+  - series: 'node_cpu_seconds_total{cpu="1",endpoint="https",instance="instance1",job="node-exporter",mode="idle",namespace="openshift-monitoring",pod="node-exporter-1",service="node-exporter"}'
+    values: '1 1'
+  - series: 'kube_pod_info{namespace="openshift-monitoring",node="node-1",pod="node-exporter-1",job="kube-state-metrics",instance="10.129.2.7:8443"}'
+    values: '1 1'
+  - series: 'kube_pod_info{namespace="openshift-monitoring",node="node-1",pod="alertmanager-0",job="kube-state-metrics",instance="10.129.2.7:8443"}'
+    values: '1 stale'
+  - series: 'kube_pod_info{namespace="openshift-monitoring",node="node-2",pod="alertmanager-0",job="kube-state-metrics",instance="10.129.2.7:8443"}'
+    values: '1 1'
+  promql_expr_test:
+  - eval_time: 0m
+    expr: node:node_num_cpu:sum
+    exp_samples:
+    - value: 2
+      labels: 'node:node_num_cpu:sum{node="node-1"}'
+  - eval_time: 1m
+    expr: node:node_num_cpu:sum
+    exp_samples:
+    - value: 2
+      labels: 'node:node_num_cpu:sum{node="node-1"}'
+
+- interval: 1m
+  input_series:
+  - series: 'kube_pod_owner{endpoint="https",instance="instance1",job="kube-state-metrics",namespace="ns1",owner_is_controller="true",owner_kind="ReplicaSet",owner_name="ds-7cc77d965f",pod="ds-7cc77d965f-cgsdv",service="ksm"}'
+    values: '1 1'
+  - series: 'kube_pod_owner{endpoint="https",instance="instance2",job="kube-state-metrics",namespace="ns1",owner_is_controller="true",owner_kind="ReplicaSet",owner_name="ds-7cc77d965f",pod="ds-7cc77d965f-cgsdv",service="ksm"}'
+    values: '1 stale'
+  - series: 'kube_replicaset_owner{endpoint="https",instance="instance1",job="kube-state-metrics",namespace="ns1",owner_is_controller="true",owner_kind="Deployment",owner_name="ds",pod="ds-777f6bf798-kq7tj",replicaset="ds-7cc77d965f",service="ksm"}'
+    values: '1 1'
+  - series: 'kube_replicaset_owner{endpoint="https",instance="instance2",job="kube-state-metrics",namespace="ns1",owner_is_controller="true",owner_kind="Deployment",owner_name="ds",pod="ds-777f6bf798-kq7tj",replicaset="ds-7cc77d965f",service="ksm"}'
+    values: '1 stale'
+  promql_expr_test:
+  - eval_time: 0m
+    expr: mixin_pod_workload
+    exp_samples:
+    - value: 1
+      labels: 'mixin_pod_workload{namespace="ns1", pod="ds-7cc77d965f-cgsdv", workload="ds", workload_type="deployment"}'
+  - eval_time: 1m
+    expr: mixin_pod_workload
+    exp_samples:
+    - value: 1
+      labels: 'mixin_pod_workload{namespace="ns1", pod="ds-7cc77d965f-cgsdv", workload="ds", workload_type="deployment"}'
