@@ -114,10 +114,10 @@
               quantile: quantile,
             },
           }
-          for metric in ['etcd_disk_wal_fsync_duration', 'etcd_disk_backend_commit_duration']      
+          for metric in ['etcd_disk_wal_fsync_duration', 'etcd_disk_backend_commit_duration']
           for quantile in ['0.99', '0.9', '0.5']
         ],
       },
-   ],
+    ],
   },
 }
