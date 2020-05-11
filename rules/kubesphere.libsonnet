@@ -7,19 +7,19 @@
           {
             record: 'namespace:container_cpu_usage_seconds_total:sum_rate',
             expr: |||
-              sum((container_cpu_usage_seconds_total{%(kubeletSelector)s, image!="", container!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s} - container_cpu_usage_seconds_total{%(kubeletSelector)s, image!="", container!=""} offset 90s * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) / 90) by (namespace, label_kubesphere_io_workspace)
+              sum((container_cpu_usage_seconds_total{%(cadvisorSelector)s, image!="", container!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s} - container_cpu_usage_seconds_total{%(cadvisorSelector)s, image!="", container!=""} offset 90s * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) / 90) by (namespace, label_kubesphere_io_workspace)
             ||| % $._config,
           },
           {
             record: 'namespace:container_memory_usage_bytes:sum',
             expr: |||
-              sum(container_memory_usage_bytes{%(kubeletSelector)s, image!="", container!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
+              sum(container_memory_usage_bytes{%(cadvisorSelector)s, image!="", container!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
             ||| % $._config,
           },
           {
             record: 'namespace:container_memory_usage_bytes_wo_cache:sum',
             expr: |||
-              sum(container_memory_working_set_bytes{%(kubeletSelector)s, image!="", container!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
+              sum(container_memory_working_set_bytes{%(cadvisorSelector)s, image!="", container!=""} * on(namespace) group_left(label_kubesphere_io_workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}) by (namespace, label_kubesphere_io_workspace)
             ||| % $._config,
           },
           {
@@ -371,31 +371,31 @@
           {
             record: 'namespace:workload_cpu_usage:sum',
             expr: |||
-              sum (label_replace(label_join(sum(irate(container_cpu_usage_seconds_total{%(kubeletSelector)s, pod!="", image!=""}[5m])) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(irate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, pod!="", image!=""}[5m])) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
             record: 'namespace:workload_memory_usage:sum',
             expr: |||
-              sum (label_replace(label_join(sum(container_memory_usage_bytes{%(kubeletSelector)s, pod!="", image!=""}) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(container_memory_usage_bytes{%(cadvisorSelector)s, pod!="", image!=""}) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
             record: 'namespace:workload_memory_usage_wo_cache:sum',
             expr: |||
-              sum (label_replace(label_join(sum(container_memory_working_set_bytes{%(kubeletSelector)s, pod!="", image!=""}) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(container_memory_working_set_bytes{%(cadvisorSelector)s, pod!="", image!=""}) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
             record: 'namespace:workload_net_bytes_transmitted:sum_irate',
             expr: |||
-              sum (label_replace(label_join(sum(irate(container_network_transmit_bytes_total{pod!="", interface!~"^(cali.+|tunl.+|dummy.+|kube.+|flannel.+|cni.+|docker.+|veth.+|lo.*)", %(kubeletSelector)s}[5m])) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(irate(container_network_transmit_bytes_total{pod!="", interface!~"^(cali.+|tunl.+|dummy.+|kube.+|flannel.+|cni.+|docker.+|veth.+|lo.*)", %(cadvisorSelector)s}[5m])) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
             record: 'namespace:workload_net_bytes_received:sum_irate',
             expr: |||
-              sum (label_replace(label_join(sum(irate(container_network_receive_bytes_total{pod!="", interface!~"^(cali.+|tunl.+|dummy.+|kube.+|flannel.+|cni.+|docker.+|veth.+|lo.*)", %(kubeletSelector)s}[5m])) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
+              sum (label_replace(label_join(sum(irate(container_network_receive_bytes_total{pod!="", interface!~"^(cali.+|tunl.+|dummy.+|kube.+|flannel.+|cni.+|docker.+|veth.+|lo.*)", %(cadvisorSelector)s}[5m])) by (namespace, pod) * on (pod, namespace) group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind", "Deployment", "owner_kind", "ReplicaSet"), "owner_kind", "Pod", "owner_kind", "<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"), "workload",":","owner_kind","owner_name"), "workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, owner_kind)
             ||| % $._config,
           },
           {
