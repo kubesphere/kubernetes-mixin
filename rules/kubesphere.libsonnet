@@ -52,16 +52,16 @@
             // it is used to calculate per-node metrics, given namespace & instance.
             record: 'node_namespace_pod:kube_pod_info:',
             expr: |||
-              max(label_replace(kube_pod_info{%(kubeStateMetricsSelector)s}, "%(podLabel)s", "$1", "pod", "(.*)")) by (node, namespace, %(podLabel)s)
+              max(kube_pod_info{%(kubeStateMetricsSelector)s} * on(node) group_left(role) kube_node_role{%(kubeStateMetricsSelector)s}) by (node, namespace, host_ip, role, %(podLabel)s)
             ||| % $._config,
           },
           {
             // This rule gives the number of CPUs per node.
             record: 'node:node_num_cpu:sum',
             expr: |||
-              count by (node) (sum by (node, cpu) (
+              count by (node, host_ip, role) (sum by (node, cpu, host_ip, role) (
                 node_cpu_seconds_total{%(nodeExporterSelector)s}
-              * on (namespace, %(podLabel)s) group_left(node)
+              * on (namespace, %(podLabel)s) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:
               ))
             ||| % $._config,
@@ -77,9 +77,9 @@
             // CPU utilisation is % CPU is not idle.
             record: 'node:node_cpu_utilisation:avg1m',
             expr: |||
-              avg by (node) (
+              avg by (node, host_ip, role) (
                 irate(node_cpu_seconds_total{%(nodeExporterSelector)s,mode="used"}[5m])
-              * on (namespace, %(podLabel)s) group_left(node)
+              * on (namespace, %(podLabel)s) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:)
             ||| % $._config,
           },
@@ -97,9 +97,9 @@
             // SINCE 2018-02-08
             record: 'node:node_memory_bytes_available:sum',
             expr: |||
-              sum by (node) (
+              sum by (node, host_ip, role) (
                 (node_memory_MemFree_bytes{%(nodeExporterSelector)s} + node_memory_Cached_bytes{%(nodeExporterSelector)s} + node_memory_Buffers_bytes{%(nodeExporterSelector)s} + node_memory_SReclaimable_bytes{%(nodeExporterSelector)s})
-                * on (namespace, %(podLabel)s) group_left(node)
+                * on (namespace, %(podLabel)s) group_left(node, host_ip, role)
                   node_namespace_pod:kube_pod_info:
               )
             ||| % $._config,
@@ -109,9 +109,9 @@
             // SINCE 2018-02-08
             record: 'node:node_memory_bytes_total:sum',
             expr: |||
-              sum by (node) (
+              sum by (node, host_ip, role) (
                 node_memory_MemTotal_bytes{%(nodeExporterSelector)s}
-                * on (namespace, %(podLabel)s) group_left(node)
+                * on (namespace, %(podLabel)s) group_left(node, host_ip, role)
                   node_namespace_pod:kube_pod_info:
               )
             ||| % $._config,
@@ -127,9 +127,9 @@
           {
             record: 'node:data_volume_iops_reads:sum',
             expr: |||
-              sum by (node) (
+              sum by (node, host_ip, role) (
                 irate(node_disk_reads_completed_total{%(nodeExporterSelector)s}[5m])
-              * on (namespace, pod) group_left(node)
+              * on (namespace, pod) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:
               )
             ||| % $._config,
@@ -137,9 +137,9 @@
           {
             record: 'node:data_volume_iops_writes:sum',
             expr: |||
-              sum by (node) (
+              sum by (node, host_ip, role) (
                 irate(node_disk_writes_completed_total{%(nodeExporterSelector)s}[5m])
-              * on (namespace, pod) group_left(node)
+              * on (namespace, pod) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:
               )
             ||| % $._config,
@@ -147,9 +147,9 @@
           {
             record: 'node:data_volume_throughput_bytes_read:sum',
             expr: |||
-              sum by (node) (
+              sum by (node, host_ip, role) (
                 irate(node_disk_read_bytes_total{%(nodeExporterSelector)s}[5m])
-              * on (namespace, pod) group_left(node)
+              * on (namespace, pod) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:
               )
             ||| % $._config,
@@ -157,9 +157,9 @@
           {
             record: 'node:data_volume_throughput_bytes_written:sum',
             expr: |||
-              sum by (node) (
+              sum by (node, host_ip, role) (
                 irate(node_disk_written_bytes_total{%(nodeExporterSelector)s}[5m])
-              * on (namespace, pod) group_left(node)
+              * on (namespace, pod) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:
               )
             ||| % $._config,
@@ -174,10 +174,10 @@
           {
             record: 'node:node_net_utilisation:sum_irate',
             expr: |||
-              sum by (node) (
+              sum by (node, host_ip, role) (
                 (irate(node_network_receive_bytes_total{%(nodeExporterSelector)s,%(hostNetworkInterfaceSelector)s}[5m]) +
                 irate(node_network_transmit_bytes_total{%(nodeExporterSelector)s,%(hostNetworkInterfaceSelector)s}[5m]))
-              * on (namespace, %(podLabel)s) group_left(node)
+              * on (namespace, %(podLabel)s) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:
               )
             ||| % $._config,
@@ -185,9 +185,9 @@
           {
             record: 'node:node_net_bytes_transmitted:sum_irate',
             expr: |||
-              sum by (node) (
+              sum by (node, host_ip, role) (
                 irate(node_network_transmit_bytes_total{%(nodeExporterSelector)s,%(hostNetworkInterfaceSelector)s}[5m])
-              * on (namespace, pod) group_left(node)
+              * on (namespace, pod) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:
               )
             ||| % $._config,
@@ -195,9 +195,9 @@
           {
             record: 'node:node_net_bytes_received:sum_irate',
             expr: |||
-              sum by (node) (
+              sum by (node, host_ip, role) (
                 irate(node_network_receive_bytes_total{%(nodeExporterSelector)s,%(hostNetworkInterfaceSelector)s}[5m])
-              * on (namespace, pod) group_left(node)
+              * on (namespace, pod) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:
               )
             ||| % $._config,
@@ -205,79 +205,85 @@
           {
             record: 'node:node_inodes_total:',
             expr: |||
-              sum by(node) (sum(max(node_filesystem_files{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s}) by (device, pod, namespace)) by (pod, namespace) * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:)
+              sum by(node, host_ip, role) (sum(max(node_filesystem_files{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s}) by (device, pod, namespace)) by (pod, namespace) * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:)
             ||| % $._config,
           },
           {
             record: 'node:node_inodes_free:',
             expr: |||
-              sum by(node) (sum(max(node_filesystem_files_free{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s}) by (device, pod, namespace)) by (pod, namespace) * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:)
+              sum by(node, host_ip, role) (sum(max(node_filesystem_files_free{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s}) by (device, pod, namespace)) by (pod, namespace) * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:)
             ||| % $._config,
           },
           {
             record: 'node:load1:ratio',
             expr: |||
-              sum by (node) (node_load1{%(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) / node:node_num_cpu:sum
+              sum by (node, host_ip, role) (node_load1{%(nodeExporterSelector)s} * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:) / node:node_num_cpu:sum
             ||| % $._config,
           },
           {
             record: 'node:load5:ratio',
             expr: |||
-              sum by (node) (node_load5{%(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) / node:node_num_cpu:sum
+              sum by (node, host_ip, role) (node_load5{%(nodeExporterSelector)s} * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:) / node:node_num_cpu:sum
             ||| % $._config,
           },
           {
             record: 'node:load15:ratio',
             expr: |||
-              sum by (node) (node_load15{%(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) / node:node_num_cpu:sum
+              sum by (node, host_ip, role) (node_load15{%(nodeExporterSelector)s} * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:) / node:node_num_cpu:sum
             ||| % $._config,
           },
           {
             record: 'node:pod_count:sum',
             expr: |||
-              sum by (node) ((kube_pod_status_scheduled{%(kubeStateMetricsSelector)s, condition="true"} > 0)  * on (namespace, pod) group_left(node) kube_pod_info{%(kubeStateMetricsSelector)s} unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0))
+              sum by (node, host_ip, role) ((kube_pod_status_scheduled{%(kubeStateMetricsSelector)s, condition="true"} > 0)  * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info: unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0))
+            ||| % $._config,
+          },
+          {
+            record: 'node:pod_capacity:sum',
+            expr: |||
+              (sum(kube_node_status_capacity_pods{%(kubeStateMetricsSelector)s}) by (node) * on(node) group_left(host_ip, role) max by(node, host_ip, role) (node_namespace_pod:kube_pod_info:)) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
             ||| % $._config,
           },
           {
             record: 'node:pod_utilization:ratio',
             expr: |||
-              (node:pod_running:count / sum(kube_node_status_capacity_pods) by (node)) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
+              (node:pod_running:count / node:pod_capacity:sum) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
             ||| % $._config,
           },
           {
             record: 'node:pod_running:count',
             expr: |||
-              count(kube_pod_info{%(kubeStateMetricsSelector)s} unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Succeeded"} > 0))  by (node) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
+              count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Succeeded"} > 0)) by (node, host_ip, role) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
             ||| % $._config,
           },
           {
             record: 'node:pod_succeeded:count',
             expr: |||
-              count(kube_pod_info{%(kubeStateMetricsSelector)s} unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Running"} > 0))  by (node) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready",status=~"unknown|false"} > 0)
+              count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Running"} > 0)) by (node, host_ip, role) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready",status=~"unknown|false"} > 0)
             ||| % $._config,
           },
           {
             record: 'node:pod_abnormal:count',
             expr: |||
-              count(kube_pod_info{%(kubeStateMetricsSelector)s, node!=""} unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Succeeded"}>0) unless on (pod, namespace) ((kube_pod_status_ready{%(kubeStateMetricsSelector)s, condition="true"}>0) and on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Running"}>0)) unless on (pod, namespace) kube_pod_container_status_waiting_reason{%(kubeStateMetricsSelector)s, reason="ContainerCreating"}>0) by (node)
+              count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Succeeded"}>0) unless on (pod, namespace) ((kube_pod_status_ready{%(kubeStateMetricsSelector)s, condition="true"}>0) and on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Running"}>0)) unless on (pod, namespace) kube_pod_container_status_waiting_reason{%(kubeStateMetricsSelector)s, reason="ContainerCreating"}>0) by (node, host_ip, role)
             ||| % $._config,
           },
           {
             record: 'node:pod_abnormal:ratio',
             expr: |||
-              (node:pod_abnormal:count / count(kube_pod_info{%(kubeStateMetricsSelector)s, node!=""} unless on (pod, namespace) kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Succeeded"}>0) by (node)) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
+              (node:pod_abnormal:count / count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Succeeded"}>0) by (node, host_ip, role)) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
             ||| % $._config,
           },
           {
             record: 'node:disk_space_available:',
             expr: |||
-              sum(max(node_filesystem_avail_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) by (device, node)) by (node)
+              sum(max(node_filesystem_avail_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:) by (device, node, host_ip, role)) by (node, host_ip, role)
             ||| % $._config,
           },
           {
             record: 'node:disk_space_utilization:ratio',
             expr: |||
-              1- sum(max(node_filesystem_avail_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) by (device, node)) by (node) / sum(max(node_filesystem_size_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node) node_namespace_pod:kube_pod_info:) by (device, node)) by (node)
+              1- sum(max(node_filesystem_avail_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:) by (device, node, host_ip, role)) by (node, host_ip, role) / sum(max(node_filesystem_size_bytes{device=~"/dev/.*", device!~"/dev/loop\\d+", %(nodeExporterSelector)s} * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:) by (device, node, host_ip, role)) by (node, host_ip, role)
             ||| % $._config,
           },
           {
