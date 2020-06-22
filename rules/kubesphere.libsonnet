@@ -52,7 +52,7 @@
             // it is used to calculate per-node metrics, given namespace & instance.
             record: 'node_namespace_pod:kube_pod_info:',
             expr: |||
-              max(kube_pod_info{%(kubeStateMetricsSelector)s} * on(node) group_left(role) kube_node_role{%(kubeStateMetricsSelector)s}) by (node, namespace, host_ip, role, %(podLabel)s)
+              max(kube_pod_info{%(kubeStateMetricsSelector)s} * on(node) group_left(role) kube_node_role{%(kubeStateMetricsSelector)s, role="master"} or on(%(podLabel)s, namespace) kube_pod_info{%(kubeStateMetricsSelector)s}) by (node, namespace, host_ip, role, %(podLabel)s)
             ||| % $._config,
           },
           {
