@@ -238,31 +238,31 @@
           {
             record: 'node:pod_count:sum',
             expr: |||
-              sum by (node, host_ip, role) ((kube_pod_status_scheduled{%(kubeStateMetricsSelector)s, condition="true"} > 0)  * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info: unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0))
+              sum by (node, host_ip, role) ((kube_pod_status_scheduled{%(kubeStateMetricsSelector)s, condition="true"} > 0)  * on (namespace, pod) group_left(node, host_ip, role) node_namespace_pod:kube_pod_info:)
             ||| % $._config,
           },
           {
             record: 'node:pod_capacity:sum',
             expr: |||
-              (sum(kube_node_status_capacity_pods{%(kubeStateMetricsSelector)s}) by (node) * on(node) group_left(host_ip, role) max by(node, host_ip, role) (node_namespace_pod:kube_pod_info:)) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
+              (sum(kube_node_status_capacity_pods{%(kubeStateMetricsSelector)s}) by (node) * on(node) group_left(host_ip, role) max by(node, host_ip, role) (node_namespace_pod:kube_pod_info:))
             ||| % $._config,
           },
           {
             record: 'node:pod_utilization:ratio',
             expr: |||
-              (node:pod_running:count / node:pod_capacity:sum) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
+              node:pod_running:count / node:pod_capacity:sum
             ||| % $._config,
           },
           {
             record: 'node:pod_running:count',
             expr: |||
-              count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Succeeded"} > 0)) by (node, host_ip, role) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
+              count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Succeeded"} > 0)) by (node, host_ip, role)
             ||| % $._config,
           },
           {
             record: 'node:pod_succeeded:count',
             expr: |||
-              count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Running"} > 0)) by (node, host_ip, role) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready",status=~"unknown|false"} > 0)
+              count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase=~"Failed|Pending|Unknown|Running"} > 0)) by (node, host_ip, role)
             ||| % $._config,
           },
           {
@@ -274,7 +274,7 @@
           {
             record: 'node:pod_abnormal:ratio',
             expr: |||
-              (node:pod_abnormal:count / count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Succeeded"}>0) by (node, host_ip, role)) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0)
+              node:pod_abnormal:count / count(node_namespace_pod:kube_pod_info: unless on (pod, namespace) kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Succeeded"}>0) by (node, host_ip, role)
             ||| % $._config,
           },
           {
@@ -309,7 +309,7 @@
           {
             record: 'cluster:pod:sum',
             expr: |||
-              sum((kube_pod_status_scheduled{%(kubeStateMetricsSelector)s, condition="true"} > 0)  * on (namespace, pod) group_left(node) (sum by (node, namespace, pod) (kube_pod_info)) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready",status=~"unknown|false"} > 0))
+              sum((kube_pod_status_scheduled{%(kubeStateMetricsSelector)s, condition="true"} > 0)  * on (namespace, pod) group_left(node) (sum by (node, namespace, pod) (kube_pod_info)))
             ||| % $._config,
           },
           {
@@ -321,13 +321,13 @@
           {
             record: 'cluster:pod_running:count',
             expr: |||
-              count(kube_pod_info{%(kubeStateMetricsSelector)s} and on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Running"}>0) unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0))
+              count(kube_pod_info{%(kubeStateMetricsSelector)s} and on (pod, namespace) (kube_pod_status_phase{%(kubeStateMetricsSelector)s, phase="Running"}>0))
             ||| % $._config,
           },
           {
             record: 'cluster:pod_utilization:ratio',
             expr: |||
-              cluster:pod_running:count / sum(kube_node_status_capacity_pods unless on (node) (kube_node_status_condition{%(kubeStateMetricsSelector)s, condition="Ready", status=~"unknown|false"} > 0))
+              cluster:pod_running:count / sum(kube_node_status_capacity_pods)
             ||| % $._config,
           },
           {
