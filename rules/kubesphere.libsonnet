@@ -51,6 +51,13 @@
         name: 'node.rules',
         rules: [
           {
+            // cpu used: all cpu cycle - cpu idle 
+            record: 'node_cpu_used_seconds_total',
+            expr: |||
+              sum (node_cpu_seconds_total{%(nodeExporterSelector)s, mode=~"user|nice|system|iowait|irq|softirq|steal"}) by (cpu, instance, job, namespace, pod)
+            ||| % $._config,
+          },
+          {
             // This rule results in the tuples (node, namespace, instance) => 1;
             // it is used to calculate per-node metrics, given namespace & instance.
             record: 'node_namespace_pod:kube_pod_info:',
@@ -73,7 +80,7 @@
             // CPU utilisation is % CPU is not idle.
             record: ':node_cpu_utilisation:avg1m',
             expr: |||
-              avg(irate(node_cpu_seconds_total{%(nodeExporterSelector)s,mode="used"}[5m]))
+              avg(irate(node_cpu_used_seconds_total{%(nodeExporterSelector)s}[5m]))
             ||| % $._config,
           },
           {
@@ -81,7 +88,7 @@
             record: 'node:node_cpu_utilisation:avg1m',
             expr: |||
               avg by (node, host_ip, role) (
-                irate(node_cpu_seconds_total{%(nodeExporterSelector)s,mode="used"}[5m])
+                irate(node_cpu_used_seconds_total{%(nodeExporterSelector)s}[5m])
               * on (namespace, %(podLabel)s) group_left(node, host_ip, role)
                 node_namespace_pod:kube_pod_info:)
             ||| % $._config,
