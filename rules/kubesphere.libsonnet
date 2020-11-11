@@ -444,6 +444,18 @@
               label_replace(label_replace((1 - sum(kube_statefulset_status_replicas_current{%(kubeStateMetricsSelector)s}) by (statefulset, namespace) / sum(kube_statefulset_replicas{%(kubeStateMetricsSelector)s}) by (statefulset, namespace)) * on (namespace) group_left(workspace)(kube_namespace_labels{%(kubeStateMetricsSelector)s}) , "workload","StatefulSet:$1", "statefulset", "(.*)"), "owner_kind","StatefulSet", "", "")
             ||| % $._config,
           },
+          {
+            record: 'namespace:kube_pod_resource_request:sum',
+            expr: |||
+              sum(kube_pod_container_resource_requests * on (pod, namespace)group_left(owner_kind,owner_name) label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind","Deployment","owner_kind","ReplicaSet"),"owner_kind","Pod","owner_kind","<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)")) by (namespace, owner_kind, pod, resource)* on(namespace) group_left(workspace)kube_namespace_labels{%(kubeStateMetricsSelector)s}
+            ||| % $._config,
+          },
+          {
+            record: 'namespace:kube_workload_resource_request:sum',
+            expr: |||
+              sum(label_replace(label_join(kube_pod_container_resource_requests * on (pod, namespace)group_left(owner_kind,owner_name)label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind","Deployment","owner_kind","ReplicaSet"),"owner_kind","Pod","owner_kind","<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"),"workload",":","owner_kind","owner_name"),"workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, resource)* on(namespace) group_left(workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}
+            ||| % $._config,
+          },
         ],
       },
       {
