@@ -456,6 +456,12 @@
               sum(label_replace(label_join(kube_pod_container_resource_requests * on (pod, namespace)group_left(owner_kind,owner_name)label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind","Deployment","owner_kind","ReplicaSet"),"owner_kind","Pod","owner_kind","<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"),"workload",":","owner_kind","owner_name"),"workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, resource)* on(namespace) group_left(workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}
             ||| % $._config,
           },
+          {
+            record: 'namespace:pvc_bytes_total:',
+            expr: |||
+              max by (namespace, node, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes) * on (namespace, persistentvolumeclaim) group_left (storageclass) kube_persistentvolumeclaim_info{%(kubeStateMetricsSelector)s} * on(namespace) group_left(workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}
+            ||| % $._config,
+          },
         ],
       },
       {
