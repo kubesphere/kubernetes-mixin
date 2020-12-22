@@ -54,7 +54,7 @@
             // cpu used: all cpu cycle - cpu idle 
             record: 'node_cpu_used_seconds_total',
             expr: |||
-              sum (node_cpu_seconds_total{%(nodeExporterSelector)s, mode=~"user|nice|system|iowait|irq|softirq|steal"}) by (cpu, instance, job, namespace, pod)
+              sum (node_cpu_seconds_total{%(nodeExporterSelector)s, mode=~"user|nice|system|iowait|irq|softirq"}) by (cpu, instance, job, namespace, pod)
             ||| % $._config,
           },
           {
@@ -457,9 +457,9 @@
             ||| % $._config,
           },
           {
-            record: 'namespace:pvc_bytes_total:',
+            record: 'namespace:pvc_bytes_total:sum',
             expr: |||
-              max by (namespace, node, persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes) * on (namespace, persistentvolumeclaim) group_left (storageclass) kube_persistentvolumeclaim_info{%(kubeStateMetricsSelector)s} * on(namespace) group_left(workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}
+              sum(label_replace(label_join(kube_pod_spec_volumes_persistentvolumeclaims_info * on (pod, namespace) group_left(owner_kind,owner_name)label_replace(label_join(label_replace(label_replace(kube_pod_owner{%(kubeStateMetricsSelector)s},"owner_kind","Deployment","owner_kind","ReplicaSet"),"owner_kind","Pod","owner_kind","<none>"),"tmp",":","owner_name","pod"),"owner_name","$1","tmp","<none>:(.*)"),"workload",":","owner_kind","owner_name"),"workload","$1","workload","(Deployment:.+)-(.+)")) by (namespace, workload, pod, persistentvolumeclaim)* on (persistentvolumeclaim) group_left (node) kubelet_volume_stats_capacity_bytes * on(namespace) group_left(workspace) kube_namespace_labels{%(kubeStateMetricsSelector)s}
             ||| % $._config,
           },
         ],
