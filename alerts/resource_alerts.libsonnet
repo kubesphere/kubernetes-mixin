@@ -61,7 +61,7 @@
           {
             alert: 'KubeCPUQuotaOvercommit',
             expr: |||
-              sum(kube_resourcequota{%(prefixedNamespaceSelector)s%(kubeStateMetricsSelector)s, type="hard", resource="cpu"})
+              sum(kube_resourcequota{%(prefixedNamespaceSelector)s%(kubeStateMetricsSelector)s, type="hard", resource=~"cpu|requests.cpu"})
                 /
               sum(kube_node_status_allocatable_cpu_cores)
                 > %(namespaceOvercommitFactor)s
@@ -77,7 +77,7 @@
           {
             alert: 'KubeMemoryQuotaOvercommit',
             expr: |||
-              sum(kube_resourcequota{%(prefixedNamespaceSelector)s%(kubeStateMetricsSelector)s, type="hard", resource="memory"})
+              sum(kube_resourcequota{%(prefixedNamespaceSelector)s%(kubeStateMetricsSelector)s, type="hard", resource=~"memory|requests.memory"})
                 /
               sum(kube_node_status_allocatable_memory_bytes{%(kubeStateMetricsSelector)s})
                 > %(namespaceOvercommitFactor)s
